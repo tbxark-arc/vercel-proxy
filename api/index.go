@@ -8,41 +8,47 @@ import (
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/favicon.ico" {
+	switch r.URL.Path {
+	case "/":
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("It's works!"))
+		return
+	case "/favicon.ico":
 		w.WriteHeader(http.StatusNotFound)
 		return
-	}
-	log.Print(r.URL.String())
-	Try(func() {
-		client := &http.Client{}
-		req, rErr := http.NewRequest(r.Method, fmt.Sprintf("https:/%s", r.URL.String()), r.Body)
-		ThrowIfError(rErr)
+	default:
+		log.Print(r.URL.String())
+		Try(func() {
+			client := &http.Client{}
+			req, rErr := http.NewRequest(r.Method, fmt.Sprintf("https:/%s", r.URL.String()), r.Body)
+			ThrowIfError(rErr)
 
-		for k, v := range r.Header {
-			for _, i := range v {
-				req.Header.Add(k, i)
+			for k, v := range r.Header {
+				for _, i := range v {
+					req.Header.Add(k, i)
+				}
 			}
-		}
 
-		ThrowIfError(req.ParseForm())
+			ThrowIfError(req.ParseForm())
 
-		resp, reqErr := client.Do(req)
-		ThrowIfError(reqErr)
+			resp, reqErr := client.Do(req)
+			ThrowIfError(reqErr)
 
-		respBody, respErr := ioutil.ReadAll(resp.Body)
-		ThrowIfError(respErr)
+			respBody, respErr := ioutil.ReadAll(resp.Body)
+			ThrowIfError(respErr)
 
-		w.WriteHeader(resp.StatusCode)
-		w.Write(respBody)
+			w.WriteHeader(resp.StatusCode)
+			w.Write(respBody)
 
-	}).Catch(func(i interface{}) {
-		w.WriteHeader(http.StatusInternalServerError)
-		if e, ok := i.(error); ok {
-			w.Write([]byte(e.Error()))
-		} else {
-			w.Write([]byte("Unknown error"))
-		}
-	})
+		}).Catch(func(i interface{}) {
+			w.WriteHeader(http.StatusInternalServerError)
+			if e, ok := i.(error); ok {
+				w.Write([]byte(e.Error()))
+			} else {
+				w.Write([]byte("Unknown error"))
+			}
+		})
+	}
 }
 
 type CatchHandler interface {
